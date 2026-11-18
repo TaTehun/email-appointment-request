@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Appointment Request · Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #080b10;
+      --bg-page:    #0f1318;
+      --bg-card:    #1c2230;
+      --bg-input:   #131720;
+      --border:     #404858;
+      --border-hi:  #505a6e;
+      --text-1:     #e6edf3;
+      --text-2:     #c8d4e0;
+      --text-3:     #a0adb8;
+      --green:      #4ade80;
+      --blue:       #60a5fa;
+      --red:        #f87171;
+      --yellow:     #fbbf24;
+      --purple:     #a78bfa;
+      --orange:     #fb923c;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-1);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Scanline texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── Animations ── */
+    @keyframes blink     { 50% { opacity: 0; } }
+    @keyframes fade-up   { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fade-in   { from { opacity:0; } to { opacity:1; } }
+    @keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,.4); } 60% { box-shadow: 0 0 0 6px rgba(74,222,128,0); } }
+    @keyframes slide-in  { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes count-bar { from { width:0; } to { width: var(--w); } }
+
+    .anim-fade-up  { animation: fade-up  .5s ease both; }
+    .anim-fade-in  { animation: fade-in  .4s ease both; }
+    .d1 { animation-delay: .05s; }
+    .d2 { animation-delay: .12s; }
+    .d3 { animation-delay: .19s; }
+    .d4 { animation-delay: .26s; }
+    .d5 { animation-delay: .33s; }
+    .d6 { animation-delay: .40s; }
+
+    /* ── Header ── */
+    .hdr {
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      min-height: 72px;
+    }
+    .hdr::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green) 20%, var(--blue) 60%, transparent);
+      opacity: 0.35;
+    }
+    .hdr-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+    }
+    .hdr-prompt {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--green);
+      opacity: 0.8;
+    }
+    .hdr-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-1);
+      letter-spacing: -0.02em;
+    }
+    .hdr-cursor {
+      color: var(--green);
+      animation: blink 1.1s step-end infinite;
+    }
+    .hdr-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-3);
+      letter-spacing: 0.01em;
+    }
+    .hdr-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hdr-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      letter-spacing: 0.04em;
+    }
+    .pill-green {
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,.3);
+      background: rgba(74,222,128,.07);
+    }
+    .pill-green .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+      animation: pulse-dot 2s ease infinite;
+    }
+    .pill-dim {
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    /* ── Tabs ── */
+    .tabs-wrap {
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: flex;
+      gap: 0;
+      position: sticky;
+      top: 72px;
+      z-index: 99;
+    }
+    .tab {
+      color: var(--text-3);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 14px 24px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s, background .2s;
+      user-select: none;
+      position: relative;
+    }
+    .tab:hover { color: var(--text-1); background: rgba(255,255,255,.02); }
+    .tab.active {
+      color: var(--text-1);
+      border-bottom-color: var(--green);
+      background: rgba(74,222,128,.04);
+    }
+    .tab-num {
+      color: var(--green);
+      margin-right: 9px;
+      font-size: 0.65rem;
+      opacity: .7;
+    }
+    .tab.active .tab-num { opacity: 1; }
+
+    /* ── Pages ── */
+    .page { display: none; background: var(--bg-page); }
+    .page.active { display: block; }
+    .page-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 28px 60px;
+    }
+
+    /* ── Section labels ── */
+    .sec-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sec-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+      max-width: 180px;
+    }
+    .sec { margin-bottom: 52px; }
+
+    /* ── Metrics ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .metric {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 2px solid transparent;
+      padding: 20px 16px 18px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .2s, transform .2s;
+    }
+    .metric::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(96,165,250,.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .metric:hover { transform: translateY(-2px); border-color: var(--border-hi); }
+    .metric.m-blue  { border-top-color: var(--blue); }
+    .metric.m-green { border-top-color: var(--green); }
+    .metric.m-red   { border-top-color: var(--red); }
+    .metric.m-yellow{ border-top-color: var(--yellow); }
+    .metric.m-purple{ border-top-color: var(--purple); }
+    .metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-1);
+    }
+    .m-blue .metric-val  { color: var(--blue); }
+    .m-green .metric-val { color: var(--green); }
+    .m-red .metric-val   { color: var(--red); }
+    .m-yellow .metric-val{ color: var(--yellow); }
+    .m-purple .metric-val{ color: var(--purple); }
+    .metric-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--text-3);
+      margin-top: 10px;
+      letter-spacing: 0.04em;
+    }
+    .metric-sub {
+      font-size: 0.67rem;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-top: 3px;
+    }
+
+    /* ── IO section ── */
+    .io-wrap { display: flex; align-items: center; gap: 16px; }
+    .sources-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .src-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 2px solid transparent;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      transition: border-color .15s, background .15s;
+    }
+    .src-row:hover { border-left-color: var(--red); background: #1a1f2c; }
+    .src-carrier { color: var(--red); font-weight: 700; min-width: 36px; }
+    .src-name    { color: var(--text-1); flex: 1; font-size: 0.7rem; font-weight: 600; font-family: 'Inter', sans-serif; }
+    .src-ext {
+      color: var(--text-2);
+      font-size: 0.64rem;
+      font-weight: 700;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+    }
+    .src-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      background: rgba(74,222,128,.08);
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,.3);
+      letter-spacing: 0.04em;
+    }
+    .io-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+    .arrow-shaft {
+      width: 2px;
+      height: 44px;
+      background: linear-gradient(180deg, var(--border), var(--blue));
+      position: relative;
+    }
+    .arrow-shaft::after {
+      content: '';
+      position: absolute;
+      bottom: -5px; left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid var(--blue);
+    }
+    .arrow-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--blue);
+      text-align: center;
+      line-height: 1.5;
+      letter-spacing: 0.04em;
+    }
+    .output-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid rgba(96,165,250,.25);
+      border-top: 2px solid var(--blue);
+      padding: 20px;
+    }
+    .output-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 16px;
+    }
+    .out-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 9px;
+      font-size: 0.71rem;
+      align-items: baseline;
+    }
+    .out-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--text-3);
+      min-width: 62px;
+      font-size: 0.64rem;
+    }
+    .out-val {
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    /* ── Feature cards ── */
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .feat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--blue);
+      padding: 20px;
+      transition: transform .2s, border-color .2s;
+    }
+    .feat-card:hover { transform: translateY(-2px); border-color: rgba(96,165,250,.6); }
+    .feat-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: 0.14em;
+      margin-bottom: 8px;
+    }
+    .feat-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 8px;
+    }
+    .feat-desc {
+      font-size: 0.73rem;
+      font-weight: 500;
+      color: var(--text-2);
+      line-height: 1.7;
+    }
+    .feat-desc code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-deep);
+      color: var(--red);
+      padding: 1px 6px;
+      font-size: 0.67rem;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Dependencies ── */
+    .dep-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .dep {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 8px 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color .15s;
+      cursor: default;
+    }
+    .dep:hover { border-color: var(--border-hi); }
+    .dep-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .dep-role {
+      font-size: 0.63rem;
+      font-weight: 600;
+      color: var(--text-3);
+    }
+    .dep-ai {
+      border-color: rgba(251,191,36,.25);
+      background: #16120a;
+    }
+    .dep-ai .dep-name { color: var(--yellow); }
+
+    /* ── Horizontal station timeline (Overview) ── */
+    @keyframes glow-h-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,.5), 0 0 10px rgba(74,222,128,.2); }
+      50%      { box-shadow: 0 0 0 7px rgba(74,222,128,0), 0 0 22px rgba(74,222,128,.5); }
+    }
+    .station-track-h { display: flex; align-items: center; gap: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border); padding: 24px 28px; }
+    .station-h { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 120px; position: relative; flex-shrink: 0; }
+    @media (max-width: 600px) {
+      .station-track-h { flex-wrap: wrap; padding: 16px 12px; row-gap: 20px; }
+      .station-h { min-width: calc(50% - 8px); flex-shrink: 0; gap: 6px; }
+      .station-h-rail { display: none; }
+    }
+    .station-h-dot { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg-deep); display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+    .station-h-dot-inner { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+    .station-h.done .station-h-dot   { border-color: rgba(96,165,250,.6); background: rgba(96,165,250,.08); }
+    .station-h.done .station-h-dot-inner { background: var(--blue); }
+    .station-h.pending .station-h-dot { border-color: rgba(251,191,36,.5); background: rgba(251,191,36,.05); }
+    .station-h.pending .station-h-dot-inner { background: var(--yellow); opacity: .6; }
+    .live-h-dot { border-color: rgba(74,222,128,.75) !important; background: rgba(74,222,128,.1) !important; animation: glow-h-pulse 2.2s ease infinite; }
+    .live-h-dot .station-h-dot-inner { background: var(--green) !important; }
+    .station-h-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-align: center; color: var(--text-3); }
+    .station-h-label.done    { color: var(--blue); }
+    .station-h-label.pending { color: var(--yellow); }
+    .station-h-label.live    { color: var(--green); }
+    .station-h-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 600; color: var(--text-3); text-align: center; }
+    .station-h-sub.live { color: var(--green); }
+    .station-h-rail { flex: 1; height: 2px; min-width: 32px; background: var(--blue); opacity: 0.45; position: relative; top: -10px; }
+    .station-h-rail.pending { background: var(--yellow); opacity: 0.3; }
+    .station-h-rail.dim     { background: var(--border); opacity: 0.35; }
+
+    /* ─────────────────────────────────────────
+       PAGE 2 — FLOWCHART (SVG)
+    ───────────────────────────────────────── */
+    .flowchart-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 24px 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .fc-svg-container {
+      width: 100%;
+      cursor: zoom-in;
+      transition: transform .35s cubic-bezier(.25,.46,.45,.94);
+    }
+    .fc-svg-container.zoomed {
+      transform: scale(1.35);
+      cursor: zoom-out;
+    }
+    #fc-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    /* hint label */
+    .fc-zoom-hint {
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--text-3);
+      margin-top: 10px;
+      letter-spacing: 0.06em;
+    }
+
+    /* node backgrounds */
+    .fc-node-start    { fill: #0d1e33; stroke: rgba(96,165,250,.55); stroke-width: 1.5; }
+    .fc-node-process  { fill: #131c28; stroke: #505a6e;              stroke-width: 1.5; }
+    .fc-node-decision { fill: #1e1a08; stroke: rgba(202,138,4,.55);  stroke-width: 1.5; }
+    .fc-node-ok       { fill: #0a1f12; stroke: rgba(74,222,128,.55); stroke-width: 1.5; }
+    .fc-node-err      { fill: #1f0d0d; stroke: rgba(248,113,113,.55);stroke-width: 1.5; }
+
+    /* node text */
+    .fc-t-main {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 12.5px;
+      fill: #e6edf3;
+    }
+    .fc-t-main.start   { fill: #93c5fd; }
+    .fc-t-main.ok      { fill: #4ade80; }
+    .fc-t-main.err     { fill: #f87171; }
+    .fc-t-main.decide  { fill: #fbbf24; }
+    .fc-t-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: 9.5px;
+      fill: #a0adb8;
+    }
+
+    /* edges */
+    .fc-edge {
+      fill: none;
+      stroke: #505a6e;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .fc-edge-yes { stroke: rgba(74,222,128,.7); }
+    .fc-edge-no  { stroke: rgba(248,113,113,.7); }
+
+    /* animated draw-on */
+    @keyframes draw-path {
+      from { stroke-dashoffset: var(--len); }
+      to   { stroke-dashoffset: 0; }
+    }
+    .fc-edge.animated {
+      stroke-dasharray: var(--len);
+      stroke-dashoffset: var(--len);
+    }
+    .fc-edge.animated.run {
+      animation: draw-path .6s ease forwards;
+    }
+
+    /* arrowheads */
+    .fc-label-yes {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 9px;
+      fill: #4ade80;
+    }
+    .fc-label-no {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 9px;
+      fill: #f87171;
+    }
+
+    /* ── Error grid ── */
+    .err-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .err-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 18px 20px;
+    }
+    .err-title {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text-1);
+      margin-bottom: 8px;
+    }
+    .err-desc {
+      font-size: 0.73rem;
+      font-weight: 500;
+      color: var(--text-2);
+      line-height: 1.65;
+    }
+    .err-desc code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-deep);
+      color: var(--red);
+      padding: 1px 6px;
+      font-size: 0.67rem;
+      border: 1px solid var(--border);
+    }
+
+    /* ─────────────────────────────────────────
+       PAGE 3 — CODE & HIGHLIGHTS
+    ───────────────────────────────────────── */
+    .code-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .code-card {
+      background: #07090e;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .code-card-hdr {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+    .code-card-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .code-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 9px;
+      background: rgba(74,222,128,.08);
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,.3);
+    }
+    pre {
+      padding: 16px;
+      font-size: 0.72rem;
+      line-height: 1.78;
+      color: var(--text-1);
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-weight: 500;
+    }
+    .kw  { color: #f472b6; font-weight: 700; }
+    .vr  { color: var(--blue); }
+    .st  { color: #86efac; }
+    .cm  { color: #4d5a6a; font-style: italic; }
+    .nm  { color: var(--orange); }
+
+    /* ── Typing reveal ── */
+    .code-card,
+    .convo-card {
+      cursor: pointer;
+    }
+    .code-card pre .char {
+      transition: none;
+    }
+    /* blinking cursor at end of typed content */
+    .type-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--green);
+      vertical-align: text-bottom;
+      margin-left: 1px;
+      animation: blink .9s step-end infinite;
+    }
+    /* convo bubble hidden state */
+    .convo-card .msg {
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .convo-card .msg.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* subtle ring on hover to hint clickable */
+    .code-card:hover  { border-color: var(--border-hi); }
+    .convo-card:hover { border-color: var(--border-hi); }
+
+    /* ── Convo cards ── */
+    .convo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .convo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .convo-hdr {
+      padding: 11px 18px;
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: 0.03em;
+    }
+    .convo-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { display: flex; gap: 10px; align-items: flex-start; }
+    .avatar {
+      width: 26px; height: 26px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .avatar-u { background: rgba(96,165,250,.12); color: var(--blue); border: 1px solid rgba(96,165,250,.35); }
+    .avatar-c { background: rgba(251,191,36,.1); color: var(--yellow); border: 1px solid rgba(251,191,36,.3); }
+    .bubble {
+      font-size: 0.76rem;
+      font-weight: 500;
+      line-height: 1.65;
+      color: var(--text-1);
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      flex: 1;
+    }
+    .bubble-c { background: #100f09; border-color: rgba(251,191,36,.2); }
+    .bubble code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-deep);
+      color: var(--red);
+      padding: 1px 5px;
+      font-size: 0.66rem;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      /* header */
+      .hdr { padding: 0 20px; flex-wrap: wrap; align-content: center; gap: 6px; }
+      .hdr-prompt { display: none; }
+      .hdr-right { flex-wrap: wrap; gap: 4px; }
+      .hdr-pill { font-size: 0.6rem; padding: 3px 8px; }
+      .hdr-title { font-size: 0.95rem; }
+      .hdr-sub { font-size: 0.62rem; }
+      .hdr-pill { font-size: 0.62rem; padding: 4px 9px; }
+      .tabs-wrap { top: 60px; padding: 0 12px; }
+      .tab { font-size: 0.7rem; padding: 12px 14px; }
+
+      /* page */
+      .page-inner { padding: 24px 16px 48px; }
+      .sec { margin-bottom: 36px; }
+
+      /* tab 01 */
+      .metrics-row { grid-template-columns: repeat(3, 1fr); }
+      .metric:nth-child(4),
+      .metric:nth-child(5) { grid-column: span 1; }
+
+      .io-wrap { flex-direction: column; gap: 12px; }
+      .io-arrow { flex-direction: row; padding: 4px 0; }
+      .arrow-shaft {
+        width: 44px; height: 2px;
+        background: linear-gradient(90deg, var(--border), var(--blue));
+      }
+      .arrow-shaft::after {
+        bottom: 50%; left: auto; right: -5px;
+        transform: translateY(50%);
+        border-left: 6px solid var(--blue);
+        border-right: none;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+      }
+      .output-card { width: 100%; }
+
+      .feat-grid { grid-template-columns: 1fr; }
+      .err-grid  { grid-template-columns: 1fr; }
+
+      /* tab 03 */
+      .code-grid  { grid-template-columns: 1fr; }
+      .convo-grid { grid-template-columns: 1fr; }
+      pre { font-size: 0.66rem; }
+    }
+
+    @media (max-width: 480px) {
+      .metrics-row { grid-template-columns: repeat(2, 1fr); }
+      .metric:last-child { grid-column: span 2; }
+      .hdr-right .pill-dim:first-of-type { display: none; } /* hide "3 runs/day" on tiny screens */
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.67rem;
+      font-weight: 600;
+      color: var(--text-3);
+      border-top: 1px solid var(--border);
+      background: var(--bg-deep);
+      letter-spacing: 0.04em;
+    }
+
+    .role-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .role-card { background: var(--bg-card); border: 1px solid var(--border); padding: 14px 16px; }
+    .role-card.mine { border-left: 3px solid var(--green); }
+    .role-card.team { border-left: 3px solid var(--border-hi); }
+    .role-who { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; letter-spacing: .1em; margin-bottom: 6px; }
+    .role-card.mine .role-who { color: var(--green); }
+    .role-card.team .role-who { color: var(--text-3); }
+    .role-title { color: var(--text-1); font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+    .role-desc { color: var(--text-2); font-size: 0.75rem; font-weight: 500; line-height: 1.55; }
+    .role-desc a, .role-title a { color: var(--blue); text-decoration: none; }
+    @media (max-width: 768px) { .role-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<header class="hdr">
+  <div class="hdr-left">
+    <span class="hdr-prompt">~/projects/email-appointment-request</span>
+    <h1 class="hdr-title">email_appointment_request<span class="hdr-cursor">_</span></h1>
+    <p class="hdr-sub">Email booking bot &nbsp;·&nbsp; Python &nbsp;·&nbsp; shared master → contact report → SMTP → master</p>
+  </div>
+  <div class="hdr-right">
+    <span class="hdr-pill pill-green"><span class="dot"></span>ACTIVE</span>
+    <span class="hdr-pill pill-dim">1 mail / load</span>
+    <span class="hdr-pill pill-dim">v1.2</span>
+  </div>
+</header>
+
+<!-- ══ Tabs ══ -->
+<div class="tabs-wrap">
+  <div class="tab active" onclick="switchTab(0)"><span class="tab-num">01</span>Overview</div>
+  <div class="tab" onclick="switchTab(1)"><span class="tab-num">02</span>Pipeline Flow</div>
+  <div class="tab" onclick="switchTab(2)"><span class="tab-num">03</span>Code &amp; Highlights</div>
+</div>
+
+<!-- PAGE 1 — OVERVIEW -->
+<div class="page active" id="page-0">
+  <div class="page-inner">
+
+    <div class="sec">
+      <p class="sec-label">// system_metrics</p>
+      <div class="metrics-row">
+        <div class="metric m-blue anim-fade-up d1">
+          <div class="metric-val">10</div>
+          <div class="metric-key">email_customers</div>
+          <div class="metric-sub">no booking portal</div>
+        </div>
+        <div class="metric m-green anim-fade-up d2">
+          <div class="metric-val">5</div>
+          <div class="metric-key">row_filters</div>
+          <div class="metric-sub">before any mail</div>
+        </div>
+        <div class="metric m-red anim-fade-up d3">
+          <div class="metric-val">1</div>
+          <div class="metric-key">mail_per_load</div>
+          <div class="metric-sub">every PO + qty listed</div>
+        </div>
+        <div class="metric m-yellow anim-fade-up d4">
+          <div class="metric-val">4</div>
+          <div class="metric-key">columns_written</div>
+          <div class="metric-sub">requested + sent D/T</div>
+        </div>
+        <div class="metric m-purple anim-fade-up d5">
+          <div class="metric-val">0</div>
+          <div class="metric-key">manual_steps</div>
+          <div class="metric-sub">per run</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// team_system · where this project fits</p>
+      <div class="role-grid">
+        <div class="role-card mine anim-fade-up d1">
+          <div class="role-who">MY PART</div>
+          <div class="role-title"><a href="https://tatehun.github.io/appointment-request-pipeline/project-overview.html">Request Tracker (parent)</a></div>
+          <div class="role-desc">Hourly orchestrator. Runs each stage as a child process, calls only the bots that have a pending request, kills any step past 2 hours.</div>
+        </div>
+        <div class="role-card mine anim-fade-up d2">
+          <div class="role-who">MY PART</div>
+          <div class="role-title"><a href="https://tatehun.github.io/appointment-request-pipeline/project-overview.html">Request Intake + Date Distribution</a></div>
+          <div class="role-desc">4 request mailboxes into one shared master. Load ID + PO dedup, per-day cap date distribution.</div>
+        </div>
+        <div class="role-card mine anim-fade-up d3">
+          <div class="role-who">MY PART</div>
+          <div class="role-title"><a href="https://tatehun.github.io/delivery-appointment-scheduler/project-overview.html">Portal Booking Bot: Retailer A</a></div>
+          <div class="role-desc">Initial / Reschedule / Cancel live on a vendor portal behind SMS MFA; Modify runs up to Save (held for sign-off).</div>
+        </div>
+        <div class="role-card mine anim-fade-up d4">
+          <div class="role-who">MY PART</div>
+          <div class="role-title"><a href="https://tatehun.github.io/email-appointment-request/project-overview.html">Email Booking Bot</a> · this repo</div>
+          <div class="role-desc">Customers without a portal get a request email built from the master and a contact report.</div>
+        </div>
+        <div class="role-card mine anim-fade-up d5">
+          <div class="role-who">MY PART</div>
+          <div class="role-title"><a href="https://tatehun.github.io/dock-appointment-booking/project-overview.html">Portal Booking Bot: Retailer B</a></div>
+          <div class="role-desc">Dock appointment portal. Built and tested; final Submit held until sign-off.</div>
+        </div>
+        <div class="role-card mine anim-fade-up d6">
+          <div class="role-who">MY PART</div>
+          <div class="role-title"><a href="https://tatehun.github.io/tms-appointment-uploader/project-overview.html">TMS Appointment Uploader</a></div>
+          <div class="role-desc">Writes confirmed appointments back into the TMS. Built; not yet wired into the tracker.</div>
+        </div>
+        <div class="role-card team anim-fade-up d6">
+          <div class="role-who">TEAMMATES</div>
+          <div class="role-title">5 other portal bots + 2 email bots</div>
+          <div class="role-desc">Booking bots for the remaining retailers and the overseas / truck email flows, called by my tracker through one config table.</div>
+        </div>
+        <div class="role-card team anim-fade-up d6">
+          <div class="role-who">TEAMMATES</div>
+          <div class="role-title">Confirmation polling + WMS upload</div>
+          <div class="role-desc">Reads confirmation mails into the master and uploads overseas results. Scheduled separately from the tracker.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// dev_timeline</p>
+      <div class="station-track-h">
+        <div class="station-h done">
+          <div class="station-h-dot"><div class="station-h-dot-inner"></div></div>
+          <div class="station-h-label done">FILTERS</div>
+          <div class="station-h-sub">Aug 2026</div>
+        </div>
+        <div class="station-h-rail done"></div>
+        <div class="station-h done">
+          <div class="station-h-dot"><div class="station-h-dot-inner"></div></div>
+          <div class="station-h-label done">MAIL ASSEMBLY</div>
+          <div class="station-h-sub">Aug 2026</div>
+        </div>
+        <div class="station-h-rail done"></div>
+        <div class="station-h done">
+          <div class="station-h-dot"><div class="station-h-dot-inner"></div></div>
+          <div class="station-h-label done">BOL PIPELINE</div>
+          <div class="station-h-sub">Aug 2026 · paused</div>
+        </div>
+        <div class="station-h-rail done"></div>
+        <div class="station-h done">
+          <div class="station-h-dot"><div class="station-h-dot-inner"></div></div>
+          <div class="station-h-label done">CONTACT MAPPING</div>
+          <div class="station-h-sub">Oct 2026</div>
+        </div>
+        <div class="station-h-rail done"></div>
+        <div class="station-h done">
+          <div class="station-h-dot live-h-dot"><div class="station-h-dot-inner"></div></div>
+          <div class="station-h-label live">TEAM REPO</div>
+          <div class="station-h-sub live">Oct 2026</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// data_sources → output</p>
+      <div class="io-wrap">
+        <div class="sources-col">
+          <div class="src-row anim-fade-up d1"><span class="src-carrier">MST</span><span class="src-name">Shared master: pending Initial rows</span><span class="src-ext">.xlsx</span><span class="src-badge">read</span></div>
+          <div class="src-row anim-fade-up d2"><span class="src-carrier">CR</span><span class="src-name">Customer contact report</span><span class="src-ext">.xlsx</span><span class="src-badge">recipients</span></div>
+          <div class="src-row anim-fade-up d3"><span class="src-carrier">ALS</span><span class="src-name">Short name → contact name aliases</span><span class="src-ext">dict</span><span class="src-badge">8 names</span></div>
+        </div>
+        <div class="io-arrow">
+          <div class="arrow-shaft"></div>
+          <div class="arrow-label">BUILD<br>+ SEND</div>
+        </div>
+        <div class="output-card anim-fade-up d3">
+          <div class="output-title">Customer request mail + master write-back</div>
+          <div class="out-row"><span class="out-key">to</span><span class="out-val">contacts matched by customer + city</span></div>
+          <div class="out-row"><span class="out-key">body</span><span class="out-val">date, Load ID, PO/qty, pallets, unload</span></div>
+          <div class="out-row"><span class="out-key">master</span><span class="out-val">C / F + 4 date/time columns</span></div>
+          <div class="out-row"><span class="out-key">stage</span><span class="out-val">Process Stage 2 for partner rows</span></div>
+          <div class="out-row"><span class="out-key">report</span><span class="out-val">result mail + Skipped file</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// technical_highlights</p>
+      <div class="feat-grid">
+        <div class="feat-card anim-fade-up d1">
+          <div class="feat-tag">FILTER</div>
+          <div class="feat-title">Five-Step Row Filter</div>
+          <div class="feat-desc">Service type, non-portal customer, Initial at Stage 1, no requested date, and blank APPT Scheduling. Each step logs its count.</div>
+        </div>
+        <div class="feat-card anim-fade-up d2">
+          <div class="feat-tag">RECIPIENTS</div>
+          <div class="feat-title">Alias + City Match</div>
+          <div class="feat-desc">Master short names map to contact-report names. Contacts are narrowed to addresses that contain the load's city; an <span class="kw">empty city never matches</span>.</div>
+        </div>
+        <div class="feat-card anim-fade-up d3">
+          <div class="feat-tag">DATES</div>
+          <div class="feat-title">Rail vs OTR Request Date</div>
+          <div class="feat-desc">Rail loads ask for destination ETA + 1 day; OTR loads ask for the RDD itself. A non-date RDD or missing ETA ends in F with the reason.</div>
+        </div>
+        <div class="feat-card anim-fade-up d4">
+          <div class="feat-tag">GROUPING</div>
+          <div class="feat-title">One Mail per Load</div>
+          <div class="feat-desc">Rows grouped by Load ID. A grouped row's comma-joined POs and quantities are split and paired in order.</div>
+        </div>
+        <div class="feat-card anim-fade-up d5">
+          <div class="feat-tag">WRITE-BACK</div>
+          <div class="feat-title">Send Time Without Sent Items</div>
+          <div class="feat-desc">The send time is captured at send and written as the request D/T, so the bot never has to <span class="kw">read the Sent Items folder</span>.</div>
+        </div>
+        <div class="feat-card anim-fade-up d6">
+          <div class="feat-tag">SAFETY</div>
+          <div class="feat-title">Formula-Safe Write</div>
+          <div class="feat-desc">Reads with <code>data_only=True</code>, writes through a second load by header name, so formulas and column order changes don't break it.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// dependencies</p>
+      <div class="dep-grid">
+        <div class="dep"><span class="dep-name">python</span><span class="dep-role">runtime</span></div>
+        <div class="dep"><span class="dep-name">openpyxl</span><span class="dep-role">master + contacts</span></div>
+        <div class="dep"><span class="dep-name">smtplib</span><span class="dep-role">customer mail</span></div>
+        <div class="dep"><span class="dep-name">re</span><span class="dep-role">address check</span></div>
+        <div class="dep"><span class="dep-name">python-dotenv</span><span class="dep-role">credentials</span></div>
+        <div class="dep"><span class="dep-name">win32com</span><span class="dep-role">ERP BOL (paused)</span></div>
+        <div class="dep"><span class="dep-name">claude-code</span><span class="dep-role">AI dev</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE 2 — PIPELINE FLOW -->
+<div class="page" id="page-1">
+  <div class="page-inner">
+
+    <div class="sec">
+      <p class="sec-label">// execution_flow</p>
+      <div class="flowchart-wrap">
+        <div class="fc-svg-container">
+        <svg id="fc-svg" viewBox="0 0 980 688">
+          <defs>
+            <marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#505a6e"/></marker>
+            <marker id="arr-yes" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0.5 L0,6.5 L7,3.5 z" fill="rgba(74,222,128,.85)"/></marker>
+            <marker id="arr-no" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0.5 L0,6.5 L7,3.5 z" fill="rgba(248,113,113,.85)"/></marker>
+          </defs>
+          <line class="fc-edge animated" x1="340" y1="58" x2="340" y2="88" marker-end="url(#arr)"/>
+          <line class="fc-edge animated" x1="340" y1="140" x2="340" y2="170" marker-end="url(#arr)"/>
+          <line class="fc-edge animated" x1="340" y1="222" x2="340" y2="252" marker-end="url(#arr)"/>
+          <path class="fc-edge fc-edge-no animated" d="M 450,282 H 640" marker-end="url(#arr-no)"/>
+          <line class="fc-edge fc-edge-yes animated" x1="340" y1="312" x2="340" y2="346" marker-end="url(#arr-yes)"/>
+          <path class="fc-edge fc-edge-no animated" d="M 450,376 H 640" marker-end="url(#arr-no)"/>
+          <line class="fc-edge fc-edge-yes animated" x1="340" y1="406" x2="340" y2="440" marker-end="url(#arr-yes)"/>
+          <path class="fc-edge fc-edge-no animated" d="M 450,470 H 640" marker-end="url(#arr-no)"/>
+          <line class="fc-edge fc-edge-yes animated" x1="340" y1="500" x2="340" y2="534" marker-end="url(#arr-yes)"/>
+          <line class="fc-edge animated" x1="340" y1="586" x2="340" y2="616" marker-end="url(#arr)"/>
+          <rect class="fc-node-start" x="180" y="14" width="320" height="44" rx="4"/>
+          <text class="fc-t-main start" x="340" y="35" text-anchor="middle">Run</text>
+          <text class="fc-t-sub" x="340" y="53" text-anchor="middle">after intake + distribution</text>
+          <rect class="fc-node-process" x="180" y="88" width="320" height="52" rx="0"/>
+          <text class="fc-t-main" x="340" y="109" text-anchor="middle">Filter Master Rows</text>
+          <text class="fc-t-sub" x="340" y="127" text-anchor="middle">5 filters · counts logged</text>
+          <rect class="fc-node-process" x="180" y="170" width="320" height="52" rx="0"/>
+          <text class="fc-t-main" x="340" y="191" text-anchor="middle">Group by Load ID</text>
+          <text class="fc-t-sub" x="340" y="209" text-anchor="middle">one mail per Load</text>
+          <polygon class="fc-node-decision" points="340,252 450,282 340,312 230,282"/>
+          <text class="fc-t-main decide" x="340" y="276" text-anchor="middle">Recipient</text>
+          <text class="fc-t-main decide" x="340" y="290" text-anchor="middle">resolved?</text>
+          <text class="fc-label-no" x="490" y="274" text-anchor="middle">No</text>
+          <text class="fc-label-yes" x="356" y="328" text-anchor="start">Yes</text>
+          <rect class="fc-node-err" x="640" y="256" width="300" height="52" rx="0"/>
+          <text class="fc-t-main err" x="790" y="277" text-anchor="middle">F + Reason</text>
+          <text class="fc-t-sub" x="790" y="295" text-anchor="middle">no recipient for customer/city</text>
+          <polygon class="fc-node-decision" points="340,346 450,376 340,406 230,376"/>
+          <text class="fc-t-main decide" x="340" y="370" text-anchor="middle">Request date</text>
+          <text class="fc-t-main decide" x="340" y="384" text-anchor="middle">computable?</text>
+          <text class="fc-label-no" x="490" y="368" text-anchor="middle">No</text>
+          <text class="fc-label-yes" x="356" y="422" text-anchor="start">Yes</text>
+          <rect class="fc-node-err" x="640" y="350" width="300" height="52" rx="0"/>
+          <text class="fc-t-main err" x="790" y="371" text-anchor="middle">F + Reason</text>
+          <text class="fc-t-sub" x="790" y="389" text-anchor="middle">missing ETA · RDD not a date</text>
+          <polygon class="fc-node-decision" points="340,440 450,470 340,500 230,470"/>
+          <text class="fc-t-main decide" x="340" y="464" text-anchor="middle">SMTP</text>
+          <text class="fc-t-main decide" x="340" y="478" text-anchor="middle">sent?</text>
+          <text class="fc-label-no" x="490" y="462" text-anchor="middle">No</text>
+          <text class="fc-label-yes" x="356" y="516" text-anchor="start">Yes</text>
+          <rect class="fc-node-err" x="640" y="444" width="300" height="52" rx="0"/>
+          <text class="fc-t-main err" x="790" y="465" text-anchor="middle">F + Reason</text>
+          <text class="fc-t-sub" x="790" y="483" text-anchor="middle">send failed</text>
+          <rect class="fc-node-ok" x="180" y="534" width="320" height="52" rx="0"/>
+          <text class="fc-t-main ok" x="340" y="555" text-anchor="middle">Write C + Request / Sent D/T</text>
+          <text class="fc-t-sub" x="340" y="573" text-anchor="middle">Process Stage 2 (partner)</text>
+          <rect class="fc-node-ok" x="180" y="616" width="320" height="52" rx="0"/>
+          <text class="fc-t-main ok" x="340" y="637" text-anchor="middle">Result Mail</text>
+          <text class="fc-t-sub" x="340" y="655" text-anchor="middle">master copy + Skipped file</text>
+        </svg>
+        </div>
+        <p class="fc-zoom-hint">click to zoom in</p>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// error_handling</p>
+      <div class="err-grid">
+        <div class="err-card" style="border-left:3px solid var(--red);">
+          <div class="err-title">No Recipient</div>
+          <div class="err-desc">No contact row for the customer, or none at the load's city → F with the customer and city in the reason.</div>
+        </div>
+        <div class="err-card" style="border-left:3px solid var(--orange);">
+          <div class="err-title">Missing Rail ETA</div>
+          <div class="err-desc">No destination ETA → no request date → F. The Load is listed in the Skipped file.</div>
+        </div>
+        <div class="err-card" style="border-left:3px solid var(--green);">
+          <div class="err-title">RDD Not a Single Date</div>
+          <div class="err-desc">OTR loads need one RDD; a blank or multi-value cell → F with the raw value in the reason.</div>
+        </div>
+        <div class="err-card" style="border-left:3px solid var(--blue);">
+          <div class="err-title">Invalid Address</div>
+          <div class="err-desc">Every address must match the email pattern; duplicates are removed case-insensitively.</div>
+        </div>
+        <div class="err-card" style="border-left:3px solid var(--purple);">
+          <div class="err-title">Send Failure</div>
+          <div class="err-desc"><code>sender.send()</code> returns False → F. Master columns are written only for successful sends.</div>
+        </div>
+        <div class="err-card" style="border-left:3px solid var(--yellow);">
+          <div class="err-title">Formula Columns</div>
+          <div class="err-desc">The write pass is a separate workbook load, so cached formula values from the read pass are never saved over formulas.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE 3 — CODE & HIGHLIGHTS -->
+<div class="page" id="page-2">
+  <div class="page-inner">
+
+    <div class="sec">
+      <p class="sec-label">// code_highlights · main_example.py</p>
+      <div class="code-grid">
+        <div class="code-card">
+          <div class="code-card-hdr">
+            <span class="code-card-title">Recipients: Alias, Then City</span>
+            <span class="code-tag">resolve_recipients()</span>
+          </div>
+          <pre>name = CUSTOMER_NAME_ALIASES.get(key, key)
+rows = list(contacts.get(name, []))
+master_city = (city <span class="kw">or</span> <span class="st">&quot;&quot;</span>).upper().rstrip(<span class="st">&quot;,&quot;</span>).strip()
+<span class="cm"># an empty city would match every address</span>
+located = [r <span class="kw">for</span> r <span class="kw">in</span> rows
+           <span class="kw">if</span> master_city <span class="kw">and</span> r[<span class="st">&quot;address&quot;</span>]
+           <span class="kw">and</span> master_city <span class="kw">in</span> r[<span class="st">&quot;address&quot;</span>].upper()]
+<span class="kw">if</span> located:
+    chosen = located
+<span class="kw">elif</span> rows <span class="kw">and</span> <span class="kw">not</span> any(r[<span class="st">&quot;address&quot;</span>] <span class="kw">for</span> r <span class="kw">in</span> rows):
+    chosen = rows          <span class="cm"># no address on file: all</span>
+<span class="kw">else</span>:
+    chosen = []</pre>
+        </div>
+        <div class="code-card">
+          <div class="code-card-hdr">
+            <span class="code-card-title">Rail vs OTR Request Date</span>
+            <span class="code-tag">requested_date()</span>
+          </div>
+          <pre><span class="kw">if</span> service_type == <span class="st">&quot;FT&quot;</span>:                <span class="cm"># over-the-road</span>
+    rdd = rep[<span class="st">&quot;RDD&quot;</span>]
+    <span class="kw">if</span> <span class="kw">not</span> isinstance(rdd, datetime):
+        <span class="kw">return</span> <span class="kw">None</span>, <span class="st">f&quot;RDD is not a single date ({rdd!r})&quot;</span>
+    <span class="kw">return</span> rdd, <span class="kw">None</span>
+eta = rep[<span class="st">&quot;Rail Desti. ETA&quot;</span>]            <span class="cm"># rail</span>
+<span class="kw">if</span> eta <span class="kw">is</span> <span class="kw">None</span>:
+    <span class="kw">return</span> <span class="kw">None</span>, <span class="st">&quot;rail ETA is missing&quot;</span>
+<span class="kw">return</span> eta + timedelta(days=<span class="nm">1</span>), <span class="kw">None</span></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-card-hdr">
+            <span class="code-card-title">Grouped Row Split Back Into Pairs</span>
+            <span class="code-tag">po_qty_pairs()</span>
+          </div>
+          <pre><span class="cm"># a grouped row: &quot;4501, 4502&quot; / &quot;10, 20&quot;</span>
+<span class="kw">for</span> row <span class="kw">in</span> rows:
+    pos = [p.strip() <span class="kw">for</span> p <span class="kw">in</span> str(row[<span class="st">&quot;Cust PO&quot;</span>]).split(<span class="st">&quot;,&quot;</span>)
+           <span class="kw">if</span> p.strip()]
+    qtys = [q.strip() <span class="kw">for</span> q <span class="kw">in</span> str(row[<span class="st">&quot;SO Qty&quot;</span>]).split(<span class="st">&quot;,&quot;</span>)]
+    pairs += [(po, qtys[i] <span class="kw">if</span> i &lt; len(qtys) <span class="kw">else</span> <span class="st">&quot;&quot;</span>)
+              <span class="kw">for</span> i, po <span class="kw">in</span> enumerate(pos)]</pre>
+        </div>
+        <div class="code-card">
+          <div class="code-card-hdr">
+            <span class="code-card-title">Write-Back by Header Name</span>
+            <span class="code-tag">write_back()</span>
+          </div>
+          <pre>wb = openpyxl.load_workbook(MASTER_PATH)   <span class="cm"># not data_only</span>
+col = {str(c.value): c.column <span class="kw">for</span> c <span class="kw">in</span> ws[<span class="nm">1</span>] <span class="kw">if</span> c.value}
+<span class="kw">for</span> r <span class="kw">in</span> range(<span class="nm">2</span>, ws.max_row + <span class="nm">1</span>):
+    load_id = ws.cell(row=r, column=col[<span class="st">&quot;Load ID&quot;</span>]).value
+    <span class="kw">if</span> load_id <span class="kw">not</span> <span class="kw">in</span> results:
+        <span class="kw">continue</span>
+    ws.cell(row=r, column=col[<span class="st">&quot;APPT Scheduling&quot;</span>],
+            value=results[load_id])
+    <span class="kw">for</span> name, value <span class="kw">in</span> updates.get(load_id, {}).items():
+        ws.cell(row=r, column=col[name], value=value) \
+          .number_format = formats[name]</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <p class="sec-label">// dev_process · Claude Code Conversations · paraphrased from working sessions</p>
+      <div class="convo-grid">
+        <div class="convo-card">
+          <div class="convo-hdr">Recipients From the Contact Report</div>
+          <div class="convo-body">
+            <div class="msg">
+              <div class="avatar avatar-u">TJ</div>
+              <div class="bubble">Take the To list from the customer contact report, not a fixed list. Map the master's short customer name through an alias table, then keep only the contacts whose address contains the load's city. CC and BCC stay fixed, and the BCC is hidden from the customer.</div>
+            </div>
+            <div class="msg">
+              <div class="avatar avatar-c">C</div>
+              <div class="bubble bubble-c"><code>resolve_recipients()</code> applies the alias, filters by city, and falls back to every row only when no row has an address. An empty city is excluded from matching so it can't hit every address.</div>
+            </div>
+          </div>
+        </div>
+        <div class="convo-card">
+          <div class="convo-hdr">Widen to Over-the-Road Loads</div>
+          <div class="convo-body">
+            <div class="msg">
+              <div class="avatar avatar-u">TJ</div>
+              <div class="bubble">Include FT loads too. Rail loads ask for destination ETA plus one day; FT loads ask for the RDD itself. If the date can't be computed, record F with the reason instead of sending a guess.</div>
+            </div>
+            <div class="msg">
+              <div class="avatar avatar-c">C</div>
+              <div class="bubble bubble-c"><code>TARGET_SERVICE_TYPES</code> is now <code>{PN, PR, FT}</code>. <code>requested_date()</code> returns <code>(date, reason)</code>; a None date short-circuits to F before any mail is built.</div>
+            </div>
+          </div>
+        </div>
+        <div class="convo-card">
+          <div class="convo-hdr">Same Result Mail as the Portal Bots</div>
+          <div class="convo-body">
+            <div class="msg">
+              <div class="avatar avatar-u">TJ</div>
+              <div class="bubble">After the run, send one result mail like the portal bots: the master attached, plus a Skipped file when any Load failed. No separate failure mail per Load. '(No Data)' in the subject when nothing was processed.</div>
+            </div>
+            <div class="msg">
+              <div class="avatar avatar-c">C</div>
+              <div class="bubble bubble-c"><code>send_result_mail()</code> copies the master under the shared naming rule, attaches the Skipped file built from <code>failures</code>, and switches the subject when nothing ran.</div>
+            </div>
+          </div>
+        </div>
+        <div class="convo-card">
+          <div class="convo-hdr">List Every PO in the Mail</div>
+          <div class="convo-body">
+            <div class="msg">
+              <div class="avatar avatar-u">TJ</div>
+              <div class="bubble">Put each PO with its quantity in the body. Grouped rows hold the POs and quantities comma-joined, so split both and pair them in the same order. Drop the container line.</div>
+            </div>
+            <div class="msg">
+              <div class="avatar avatar-c">C</div>
+              <div class="bubble bubble-c"><code>po_qty_pairs()</code> walks every row of the Load and pairs the split lists by index; a missing quantity stays blank instead of shifting the rest.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Email Appointment Request &nbsp;·&nbsp; Taehun Jang &nbsp;·&nbsp; Python · SMTP · Claude Code
+</footer>
+
+<script>
+  /* ══ TYPING ANIMATION ══ */
+
+  // --- Code cards: visible by default, click → clear → type back ---
+  function initCodeCard(card) {
+    const pre = card.querySelector('pre');
+    if (!pre || card._typingInit) return;
+    card._typingInit = true;
+
+    // Snapshot colors from syntax-highlight spans before wrapping
+    pre.querySelectorAll('span[class]').forEach(s => {
+      s.dataset.color = getComputedStyle(s).color;
+    });
+
+    // Wrap every character in a .char span, preserving inherited color
+    function wrapChars(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const frag = document.createDocumentFragment();
+        for (const ch of node.textContent) {
+          const s = document.createElement('span');
+          s.className = 'char';
+          s.textContent = ch;
+          frag.appendChild(s);
+        }
+        node.replaceWith(frag);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        Array.from(node.childNodes).forEach(wrapChars);
+        // propagate snapshotted color down to child chars
+        if (node.dataset.color) {
+          node.querySelectorAll('.char:not([data-color])').forEach(c => {
+            c.dataset.color = node.dataset.color;
+          });
+        }
+      }
+    }
+    Array.from(pre.childNodes).forEach(wrapChars);
+
+    // fallback color for chars without explicit color
+    pre.querySelectorAll('.char:not([data-color])').forEach(c => {
+      c.dataset.color = '#e6edf3';
+    });
+
+    // cursor
+    const cursor = document.createElement('span');
+    cursor.className = 'type-cursor';
+    cursor.style.display = 'none';
+    pre.appendChild(cursor);
+
+    card._chars  = Array.from(pre.querySelectorAll('.char'));
+    card._cursor = cursor;
+    card._typing = false;
+
+  }
+
+  function replayCode(card) {
+    if (card._typing) return;
+    card._typing = true;
+    card._cursor.style.display = 'inline-block';
+
+    card._chars.forEach(c => { c.style.color = 'transparent'; });
+
+    const SPEED = 10;
+    const batch = Math.max(1, Math.floor(card._chars.length / 280));
+    let i = 0;
+    function tick() {
+      if (i >= card._chars.length) {
+        card._cursor.style.display = 'none';
+        card._typing = false;
+        return;
+      }
+      for (let b = 0; b < batch && i < card._chars.length; b++, i++) {
+        card._chars[i].style.color = card._chars[i].dataset.color;
+      }
+      setTimeout(tick, SPEED);
+    }
+    setTimeout(tick, 80);
+  }
+
+  // --- Convo cards: visible by default, scroll into view → hide bubbles → reveal one by one ---
+  function initConvoCard(card) {
+    if (card._typingInit) return;
+    card._typingInit = true;
+    card._msgs   = Array.from(card.querySelectorAll('.msg'));
+    card._typing = false;
+  }
+
+  function replayConvo(card) {
+    if (card._typing) return;
+    card._typing = true;
+    card._msgs.forEach(m => m.classList.remove('visible'));
+    card._msgs.forEach((m, i) => {
+      setTimeout(() => {
+        m.classList.add('visible');
+        if (i === card._msgs.length - 1) card._typing = false;
+      }, 150 + i * 480);
+    });
+  }
+
+  // Initialize page-2 cards and attach Intersection Observer
+  let page2Inited = false;
+  function initPage2() {
+    if (page2Inited) return;
+    page2Inited = true;
+
+    document.querySelectorAll('.code-card').forEach(initCodeCard);
+    document.querySelectorAll('.convo-card .msg').forEach(m => m.classList.add('visible'));
+    document.querySelectorAll('.convo-card').forEach(initConvoCard);
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        observer.unobserve(el); // fire once per card
+        if (el.classList.contains('code-card'))  replayCode(el);
+        if (el.classList.contains('convo-card')) replayConvo(el);
+      });
+    }, { threshold: 0.35 }); // trigger when 35% of card is visible
+
+    document.querySelectorAll('.code-card, .convo-card').forEach(c => observer.observe(c));
+  }
+
+  function syncTabsTop() {
+    const hdr = document.querySelector('.hdr');
+    const tabs = document.querySelector('.tabs-wrap');
+    if (hdr && tabs) tabs.style.top = hdr.offsetHeight + 'px';
+  }
+  syncTabsTop();
+  window.addEventListener('resize', syncTabsTop);
+
+  function switchTab(i) {
+    document.querySelectorAll('.tab').forEach((t, j) => t.classList.toggle('active', j === i));
+    document.querySelectorAll('.page').forEach((p, j) => p.classList.toggle('active', j === i));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (i === 2) initPage2();
+
+    // Re-trigger fade-up animations on tab content
+    document.querySelectorAll('.page.active .anim-fade-up, .page.active .anim-fade-in').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = '';
+    });
+
+    // Trigger SVG draw-on animation when Pipeline Flow tab is shown
+    if (i === 1) {
+      const edges = document.querySelectorAll('#fc-svg .fc-edge.animated');
+      edges.forEach(el => el.classList.remove('run'));
+      // force reflow then stagger each path
+      requestAnimationFrame(() => {
+        edges.forEach((el, idx) => {
+          const len = el.getTotalLength ? el.getTotalLength() : 100;
+          el.style.setProperty('--len', len);
+          el.style.strokeDasharray  = len;
+          el.style.strokeDashoffset = len;
+          setTimeout(() => el.classList.add('run'), idx * 80);
+        });
+      });
+    }
+  }
+
+  // Auto-run draw animation for any edges already on the active tab on load
+  window.addEventListener('DOMContentLoaded', () => {
+    const edges = document.querySelectorAll('#fc-svg .fc-edge');
+    edges.forEach(el => {
+      const len = el.getTotalLength ? el.getTotalLength() : 80;
+      el.style.setProperty('--len', len);
+    });
+
+    // Click/touch toggle zoom — origin follows pointer/touch position
+    const container = document.querySelector('.fc-svg-container');
+    const hint = document.querySelector('.fc-zoom-hint');
+
+    function getOrigin(e) {
+      const rect = container.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const xPct = ((clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
+      const yPct = ((clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
+      return `${xPct} ${yPct}`;
+    }
+
+    function toggleZoom(e) {
+      e.preventDefault();
+      const zooming = !container.classList.contains('zoomed');
+      if (zooming) container.style.transformOrigin = getOrigin(e);
+      container.classList.toggle('zoomed', zooming);
+      if (hint) hint.textContent = zooming ? 'click to zoom out' : 'click to zoom in';
+    }
+
+    if (container) {
+      container.addEventListener('click', toggleZoom);
+      container.addEventListener('touchstart', toggleZoom, { passive: false });
+    }
+  });
+</script>
+
+</body>
+</html>
